@@ -31,3 +31,11 @@ def test_decode_bin_rejects_wrong_length():
 def test_decode_bin_out_of_palette_index_maps_white():
     img = decode_bin(bytes([0xF0]), 2, 1)  # nibble 0xF is undefined
     assert img.getpixel((0, 0)) == PALETTE[1]
+
+
+def test_state_round_trip(tmp_path):
+    from tesserae_dryrun import load_state, save_state
+    p = tmp_path / "state.json"
+    assert load_state(p) == {}
+    save_state(p, {"token": "abc", "etag": '"d1"'})
+    assert load_state(p) == {"token": "abc", "etag": '"d1"'}
