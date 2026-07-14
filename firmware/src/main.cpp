@@ -22,6 +22,9 @@ static TesseraeClient client(TESSERAE_BASE_URL, DEVICE_ID);
 // screen. Transient errors keep the last frame visible.
 static const uint8_t kFailuresBeforeScreen = 5;
 
+// Saturating increment: never wraps a uint8_t failure counter past 255.
+static uint8_t bumpFailures(uint8_t n) { return n < 255 ? n + 1 : n; }
+
 static void goToSleep(uint32_t seconds) {
     Serial.printf("sleeping %us\n", seconds);
     Serial.flush();
@@ -56,10 +59,7 @@ static bool ensurePaired() {
     Serial.println("no token; registering with pairing code");
     if (!client.registerDevice(PAIRING_CODE, DEVICE_NAME, WiFi.macAddress(),
                                token)) {
-        showStatusScreen(display, "Pairing failed",
-                         "Check PAIRING_CODE in config.h",
-                         ("Server: " TESSERAE_BASE_URL),
-                         "Generate a code: Settings > Devices");
+        Serial.println("pairing failed");
         return false;
     }
     state.setToken(token);
@@ -86,7 +86,8 @@ static uint32_t runCycle() {
     uint8_t failures = state.failures();
 
     if (!connectWifi()) {
-        state.setFailures(++failures);
+        failures = bumpFailures(failures);
+        state.setFailures(failures);
         Serial.printf("wifi failed (%u consecutive)\n", failures);
         if (failures == kFailuresBeforeScreen)
             showStatusScreen(display, "Wi-Fi unreachable",
@@ -95,7 +96,16 @@ static uint32_t runCycle() {
     }
 
     if (!ensurePaired()) {
-        state.setFailures(++failures);
+        // Show help immediately only on a fresh device that has never
+        // painted a dashboard; otherwise escalate like any other failure.
+        bool freshDevice = failures == 0 && state.etag().length() == 0;
+        failures = bumpFailures(failures);
+        state.setFailures(failures);
+        if (freshDevice || failures == kFailuresBeforeScreen)
+            showStatusScreen(display, "Pairing failed",
+                             "Check PAIRING_CODE in config.h",
+                             ("Server: " TESSERAE_BASE_URL),
+                             "Generate a code: Settings > Devices");
         return tesscore::backoffSeconds(failures, FALLBACK_POLL_S);
     }
 
@@ -106,17 +116,22 @@ static uint32_t runCycle() {
         // Token revoked/instance deleted server-side: re-pair next cycle.
         Serial.println("auth error; clearing pairing");
         state.clear();
-        state.setFailures(++failures);
+        // Failure counter is deliberately re-persisted after the wipe so
+        // escalation continues across a re-pair rather than resetting.
+        failures = bumpFailures(failures);
+        state.setFailures(failures);
         return tesscore::backoffSeconds(failures, FALLBACK_POLL_S);
     }
     if (res == FetchResult::Error) {
-        state.setFailures(++failures);
+        failures = bumpFailures(failures);
+        state.setFailures(failures);
         if (failures == kFailuresBeforeScreen)
             showStatusScreen(display, "Server unreachable",
                              ("URL: " TESSERAE_BASE_URL), "Still retrying...");
         return tesscore::backoffSeconds(failures, FALLBACK_POLL_S);
     }
 
+    bool cycleOk = true;
     if (res == FetchResult::NewFrame) {
         size_t len = tesscore::packedSize4bpp(env.panelW, env.panelH);
         uint8_t *buf = (uint8_t *)ps_malloc(len);
@@ -130,6 +145,7 @@ static uint32_t runCycle() {
             // Keep the old image; tell the server.
             client.postLog("error", buf ? "frame download failed"
                                         : "frame buffer alloc failed");
+            cycleOk = false;
         }
         free(buf);
     } else if (res == FetchResult::NoContent) {
@@ -138,6 +154,14 @@ static uint32_t runCycle() {
         Serial.println("frame unchanged (304)");
     }
 
+    if (!cycleOk) {
+        failures = bumpFailures(failures);
+        state.setFailures(failures);
+        if (failures == kFailuresBeforeScreen)
+            showStatusScreen(display, "Frame updates failing",
+                             "Dashboard may be stale", "Still retrying...");
+        return tesscore::backoffSeconds(failures, FALLBACK_POLL_S);
+    }
     state.setFailures(0);
 
     int mv = batteryMv();
