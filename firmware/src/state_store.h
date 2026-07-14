@@ -17,5 +17,5 @@ class StateStore {
     uint8_t failures();
     void setFailures(uint8_t n);
 
-    void clear(); // wipe pairing (token + etag)
+    void clear(); // wipe pairing state: token, etag, and failure counter
 };
