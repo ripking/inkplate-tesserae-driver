@@ -16,8 +16,8 @@ uint32_t backoffSeconds(uint8_t consecutiveFailures, uint32_t capS) {
     if (consecutiveFailures == 0)
         return 0;
     uint8_t shift = consecutiveFailures - 1;
-    if (shift > 6)
-        shift = 6;
+    if (shift > 24)
+        shift = 24;
     uint32_t s = 60u << shift;
     return s > capS ? capS : s;
 }
