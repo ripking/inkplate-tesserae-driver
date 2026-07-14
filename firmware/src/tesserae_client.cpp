@@ -112,8 +112,19 @@ bool TesseraeClient::downloadFrame(const String &url, uint8_t *buf,
         if (n > 0)
             got += n;
     }
-    // Anything still buffered means the body was longer than expected.
-    bool extra = stream->available() > 0;
+    // A body longer than expectedLen means a server/format mismatch. Give
+    // any trailing bytes a short window to arrive before deciding.
+    bool extra = false;
+    uint32_t graceDeadline = millis() + 250;
+    while (millis() < graceDeadline) {
+        if (stream->available() > 0) {
+            extra = true;
+            break;
+        }
+        if (!http.connected())
+            break;
+        delay(10);
+    }
     http.end();
     if (got != expectedLen || extra) {
         Serial.printf("download: got %u of %u bytes (extra=%d)\n",
