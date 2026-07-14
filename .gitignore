@@ -1,0 +1,13 @@
+# Python
+__pycache__/
+*.pyc
+.venv/
+tools/.tesserae_state.json
+tools/frame.png
+
+# PlatformIO
+firmware/.pio/
+firmware/include/config.h
+
+# OS
+.DS_Store
