@@ -1,32 +1,40 @@
 # Tesserae on Unraid
 
+Deployed on RifkinHomelab (`192.168.1.89`). **Port 8766, not Tesserae's
+default 8765** — 8765 is already taken by the `health-ingest` container.
+The compose file binds Tesserae to 8766 inside the container and maps it
+1:1, with `TESSERAE_HOST_IP` set so frame URLs advertised to devices
+point at the host's LAN IP (bridge networking).
+
+Admin UI: `http://192.168.1.89:8766`
+
 ## Install
 
-Option A — **Compose Manager plugin** (recommended):
+Option A — SSH (how this instance was deployed):
+```sh
+mkdir -p /mnt/user/appdata/tesserae/data
+scp docker-compose.yml unraid:/mnt/user/appdata/tesserae/
+ssh unraid 'cd /mnt/user/appdata/tesserae && docker-compose up -d'
+```
+
+Option B — **Compose Manager plugin**:
 1. Apps → install "Compose.Manager" if not present.
 2. Add a new stack named `tesserae`, paste `docker-compose.yml` from this
    directory, set the stack directory to `/mnt/user/appdata/tesserae`.
 3. Compose Up.
 
-Option B — SSH:
-```sh
-mkdir -p /mnt/user/appdata/tesserae
-cp docker-compose.yml /mnt/user/appdata/tesserae/
-cd /mnt/user/appdata/tesserae && docker compose up -d
-```
-
-Then open `http://<unraid-ip>:8765`, set the admin password, and run the
+Then open `http://192.168.1.89:8766`, set the admin password, and run the
 onboarding wizard. Keep it LAN-only; do not reverse-proxy it to the internet.
 
 Privacy note: Settings → System → "Online features" controls the only
 outbound calls (update checks + anonymous widget-install counts to
 api.tesserae.ink). Off is fine; upgrades then happen via
-`docker compose pull`.
+`docker-compose pull && docker-compose up -d`.
 
 ## Compose a dashboard
 
 Dashboards are composed in the browser (Pages). Add widgets, arrange tiles.
-The preview at `http://<unraid-ip>:8765/preview/<device_id>.png` shows the
+The preview at `http://192.168.1.89:8766/preview/<device_id>.png` shows the
 last rendered composition once a device exists and a page is assigned.
 
 ## Pair the Inkplate

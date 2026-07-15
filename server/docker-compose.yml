@@ -1,12 +1,21 @@
-# Tesserae on Unraid.
+# Tesserae on Unraid (RifkinHomelab).
 #
-#   cd /mnt/user/appdata/tesserae && docker compose up -d
+#   cd /mnt/user/appdata/tesserae && docker-compose up -d
 #
-# Admin UI: http://<unraid-ip>:8765 — first request walks through
+# Admin UI: http://192.168.1.89:8766 — first request walks through
 # password setup and onboarding.
 #
+# Port 8765 (Tesserae's default) is already taken on this host by the
+# health-ingest container, so Tesserae runs on 8766 instead: the
+# container command binds 8766 internally and the ports: block maps it
+# 1:1, keeping the port in advertised frame URLs correct. Bridge
+# networking therefore also needs TESSERAE_HOST_IP so those URLs use
+# the host's LAN IP rather than the container's 172.x address.
+#
+# MQTT (1883) is not published — the Inkplate client is REST-only.
+#
 # After upgrades work, pin `latest` to a specific tag so
-# `docker compose pull && docker compose up -d` is deliberate.
+# `docker-compose pull && docker-compose up -d` is deliberate.
 
 services:
   tesserae:
@@ -14,10 +23,10 @@ services:
     container_name: tesserae
     restart: unless-stopped
 
-    # Host networking (Linux/Unraid): Tesserae binds 8765 on the host
-    # directly, frame URLs point at the real LAN IP, and the built-in
-    # MQTT broker (1883) is reachable without a ports: block.
-    network_mode: host
+    command: ["tesserae", "--host", "0.0.0.0", "--port", "8766"]
+
+    ports:
+      - "8766:8766"
 
     volumes:
       # Everything Tesserae persists: settings, pages, schedules,
@@ -26,3 +35,4 @@ services:
 
     environment:
       TESSERAE_IN_DOCKER: "1"
+      TESSERAE_HOST_IP: "192.168.1.89"
