@@ -11,6 +11,8 @@ Work top to bottom; each stage gates the next.
 
 ## 2. Protocol dry-run (no hardware at risk)
 
+    # One-time setup from the repo root:
+    python3 -m venv .venv && .venv/bin/pip install -r tools/requirements.txt
     .venv/bin/python tools/tesserae_dryrun.py register \
         --server http://<unraid-ip>:8765 --code <6-digit-code>
     # In the UI: assign the dashboard page to the new "Dry-run Inkplate"

@@ -133,21 +133,28 @@ static uint32_t runCycle() {
 
     bool cycleOk = true;
     if (res == FetchResult::NewFrame) {
-        size_t len = tesscore::packedSize4bpp(env.panelW, env.panelH);
-        uint8_t *buf = (uint8_t *)ps_malloc(len);
-        if (!buf)
-            buf = (uint8_t *)malloc(len);
-        if (buf && client.downloadFrame(env.url, buf, len)) {
-            Serial.printf("painting %ux%u frame\n", env.panelW, env.panelH);
-            paintFrame(display, buf, env.panelW, env.panelH);
-            state.setEtag(env.etag);
-        } else {
-            // Keep the old image; tell the server.
-            client.postLog("error", buf ? "frame download failed"
-                                        : "frame buffer alloc failed");
+        if (env.panelW != PANEL_W || env.panelH != PANEL_H) {
+            Serial.printf("panel mismatch: server says %dx%d, panel is %dx%d\n",
+                          env.panelW, env.panelH, PANEL_W, PANEL_H);
+            client.postLog("error", "panel dimension mismatch; fix the device instance in the UI");
             cycleOk = false;
+        } else {
+            size_t len = tesscore::packedSize4bpp(env.panelW, env.panelH);
+            uint8_t *buf = (uint8_t *)ps_malloc(len);
+            if (!buf)
+                buf = (uint8_t *)malloc(len);
+            if (buf && client.downloadFrame(env.url, buf, len)) {
+                Serial.printf("painting %ux%u frame\n", env.panelW, env.panelH);
+                paintFrame(display, buf, env.panelW, env.panelH);
+                state.setEtag(env.etag);
+            } else {
+                // Keep the old image; tell the server.
+                client.postLog("error", buf ? "frame download failed"
+                                            : "frame buffer alloc failed");
+                cycleOk = false;
+            }
+            free(buf);
         }
-        free(buf);
     } else if (res == FetchResult::NoContent) {
         Serial.println("no page assigned to this device yet");
     } else {

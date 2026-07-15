@@ -23,7 +23,7 @@ PALETTE = [
 
 def decode_bin(data: bytes, w: int, h: int) -> Image.Image:
     """Unpack a Tesserae 4-bpp .bin frame (high nibble = even column)."""
-    expected = w * h // 2
+    expected = h * ((w + 1) // 2)
     if len(data) != expected:
         raise ValueError(f"frame is {len(data)} bytes, expected {expected}")
     img = Image.new("RGB", (w, h))
