@@ -3,10 +3,17 @@ from tesserae_dryrun import PALETTE, decode_bin
 
 
 def test_palette_has_seven_colors_in_tesserae_order():
+    # Order verified byte-for-byte against the server's Calibration
+    # "Palette swatches" pattern (2026-07-14): 2..5 are yellow/red/blue/green,
+    # NOT the Inkplate constant order. Mirrors frame_painter.cpp kPalette.
     assert len(PALETTE) == 7
     assert PALETTE[0] == (0, 0, 0)        # black
     assert PALETTE[1] == (255, 255, 255)  # white
-    assert PALETTE[4] == (255, 0, 0)      # red
+    assert PALETTE[2] == (255, 255, 0)    # yellow
+    assert PALETTE[3] == (255, 0, 0)      # red
+    assert PALETTE[4] == (0, 0, 255)      # blue
+    assert PALETTE[5] == (0, 128, 0)      # green
+    assert PALETTE[6] == (255, 140, 0)    # orange
 
 
 def test_decode_bin_unpacks_high_nibble_even_column():
