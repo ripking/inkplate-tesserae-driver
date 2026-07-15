@@ -1,0 +1,28 @@
+# Tesserae on Unraid.
+#
+#   cd /mnt/user/appdata/tesserae && docker compose up -d
+#
+# Admin UI: http://<unraid-ip>:8765 — first request walks through
+# password setup and onboarding.
+#
+# After upgrades work, pin `latest` to a specific tag so
+# `docker compose pull && docker compose up -d` is deliberate.
+
+services:
+  tesserae:
+    image: ghcr.io/dmellok/tesserae:latest
+    container_name: tesserae
+    restart: unless-stopped
+
+    # Host networking (Linux/Unraid): Tesserae binds 8765 on the host
+    # directly, frame URLs point at the real LAN IP, and the built-in
+    # MQTT broker (1883) is reachable without a ports: block.
+    network_mode: host
+
+    volumes:
+      # Everything Tesserae persists: settings, pages, schedules,
+      # render cache, backups. Lives on the array; back it up.
+      - /mnt/user/appdata/tesserae/data:/app/data
+
+    environment:
+      TESSERAE_IN_DOCKER: "1"
