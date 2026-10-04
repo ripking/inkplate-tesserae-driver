@@ -166,3 +166,9 @@ happens.
   the actual work of building the dashboards.
 - [Soldered's Inkplate library](https://github.com/SolderedElectronics/Inkplate-Arduino-library),
   which drives the screen.
+
+---
+
+## License
+
+[MIT](LICENSE)
