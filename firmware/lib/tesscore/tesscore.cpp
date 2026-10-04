@@ -34,4 +34,19 @@ void unpack4bpp(const uint8_t *src, int w, int h, PixelEmit emit, void *ctx) {
     }
 }
 
+FrameStride frameStride(int canvasW, int canvasH, int nativeW, int nativeH,
+                        int panelW, int panelH) {
+    if (nativeW > 0 && nativeH > 0) {
+        if (nativeW == panelW && nativeH == panelH)
+            return FrameStride::Landscape;
+        if (nativeW == panelH && nativeH == panelW)
+            return FrameStride::Transposed;
+        return FrameStride::Mismatch;
+    }
+    if ((canvasW == panelW && canvasH == panelH) ||
+        (canvasW == panelH && canvasH == panelW))
+        return FrameStride::Landscape;
+    return FrameStride::Mismatch;
+}
+
 } // namespace tesscore

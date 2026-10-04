@@ -10,6 +10,8 @@ struct FrameEnvelope {
     String etag;   // ETag header of the /frame response
     int panelW = 0;
     int panelH = 0;
+    int nativeW = 0; // .bin row stride, if the server echoed it (else 0)
+    int nativeH = 0;
 };
 
 struct StatusReply {

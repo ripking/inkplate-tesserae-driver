@@ -4,7 +4,7 @@
 #include <HTTPClient.h>
 #include <WiFi.h>
 
-#include "config.h"
+#include "board.h"
 
 static const uint32_t kHttpTimeoutMs = 20000;
 
@@ -23,7 +23,7 @@ bool TesseraeClient::registerDevice(const String &pairingCode,
     doc["kind"] = "esp32_client";
     doc["panel_w"] = PANEL_W;
     doc["panel_h"] = PANEL_H;
-    doc["gamut"] = "inky_7colour";
+    doc["gamut"] = PANEL_GAMUT;
     doc["name"] = name;
     doc["fw_version"] = FW_VERSION;
     doc["mac"] = mac;
@@ -87,6 +87,10 @@ FetchResult TesseraeClient::fetchEnvelope(const String &etag,
     out.format = doc["format"] | "bin";
     out.panelW = doc["panel_w"] | PANEL_W;
     out.panelH = doc["panel_h"] | PANEL_H;
+    // Newer servers echo the stride the .bin is packed at when the panel
+    // block records one; 0 when absent.
+    out.nativeW = doc["native_w"] | 0;
+    out.nativeH = doc["native_h"] | 0;
     return out.url.length() ? FetchResult::NewFrame : FetchResult::Error;
 }
 

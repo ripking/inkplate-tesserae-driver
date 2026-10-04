@@ -23,9 +23,36 @@ PALETTE = [
     (255, 140, 0),    # 6 orange
 ]
 
+# Tesserae `waveshare_e6` (declared as spectra_6) nibbles are the Spectra 6
+# controller codes; 4 and 7 are reserved. firmware/src/frame_painter.cpp
+# maps the same codes for the Inkplate 13SPECTRA.
+SPECTRA6_PALETTE = {
+    0: (0, 0, 0),        # black
+    1: (255, 255, 255),  # white
+    2: (255, 255, 0),    # yellow
+    3: (255, 0, 0),      # red
+    5: (0, 0, 255),      # blue
+    6: (0, 128, 0),      # green
+}
 
-def decode_bin(data: bytes, w: int, h: int) -> Image.Image:
-    """Unpack a Tesserae 4-bpp .bin frame (high nibble = even column)."""
+# Mirrors firmware/include/board.h: panel_w/h is the landscape canvas the
+# device registers, which Tesserae's panel presets also use as the .bin
+# stride.
+BOARDS = {
+    "6color": dict(panel_w=600, panel_h=448, gamut="inky_7colour",
+                   palette=dict(enumerate(PALETTE)), device_id="inkplate6c_dryrun"),
+    "13spectra": dict(panel_w=1600, panel_h=1200, gamut="spectra_6",
+                      palette=SPECTRA6_PALETTE, device_id="inkplate13s_dryrun"),
+}
+
+
+def decode_bin(data: bytes, w: int, h: int, palette=None) -> Image.Image:
+    """Unpack a Tesserae 4-bpp .bin frame (high nibble = even column).
+
+    ``palette`` maps nibble -> RGB (default: the 6COLOR list); unmapped
+    nibbles decode as white."""
+    lut = dict(enumerate(PALETTE)) if palette is None else palette
+    white = (255, 255, 255)
     expected = h * ((w + 1) // 2)
     if len(data) != expected:
         raise ValueError(f"frame is {len(data)} bytes, expected {expected}")
@@ -38,7 +65,7 @@ def decode_bin(data: bytes, w: int, h: int) -> Image.Image:
             i += 1
             for xx, nibble in ((x, byte >> 4), (x + 1, byte & 0x0F)):
                 if xx < w:
-                    px[xx, y] = PALETTE[nibble] if nibble < 7 else PALETTE[1]
+                    px[xx, y] = lut.get(nibble, white)
     return img
 
 
@@ -51,7 +78,6 @@ from pathlib import Path
 import requests
 
 STATE_PATH = Path(__file__).parent / ".tesserae_state.json"
-PANEL_W, PANEL_H = 600, 448
 
 
 def load_state(path=STATE_PATH) -> dict:
@@ -69,12 +95,13 @@ def _auth(state):
 
 def cmd_register(args):
     state = load_state()
+    board = BOARDS[args.board]
     manifest = {
-        "device_id": args.device_id,
+        "device_id": args.device_id or board["device_id"],
         "kind": "esp32_client",
-        "panel_w": PANEL_W,
-        "panel_h": PANEL_H,
-        "gamut": "inky_7colour",
+        "panel_w": board["panel_w"],
+        "panel_h": board["panel_h"],
+        "gamut": board["gamut"],
         "name": args.name,
         "fw_version": "dryrun-0.1.0",
         "mac": args.mac or "02:00:%02X:%02X:%02X:%02X" % tuple(uuid.uuid4().bytes[:4]),
@@ -90,7 +117,8 @@ def cmd_register(args):
     body = r.json()
     state.update(
         base_url=args.server,
-        device_id=args.device_id,
+        device_id=manifest["device_id"],
+        board=args.board,
         token=body["device_token"],
         etag=None,
     )
@@ -117,7 +145,16 @@ def cmd_fetch(args):
     print("envelope:", json.dumps(env, indent=2))
     frame = requests.get(env["url"], timeout=30)
     frame.raise_for_status()
-    img = decode_bin(frame.content, env.get("panel_w", PANEL_W), env.get("panel_h", PANEL_H))
+    board = BOARDS[state.get("board", "6color")]
+    # The .bin is packed at native_* when the server echoes it (a device
+    # record holding a portrait framebuffer), else at the landscape canvas.
+    w = env.get("native_w", board["panel_w"])
+    h = env.get("native_h", board["panel_h"])
+    img = decode_bin(frame.content, w, h, board["palette"])
+    if (w < h) != (board["panel_w"] < board["panel_h"]):
+        # The server turned the canvas 90 deg CW onto a transposed stride;
+        # undo it so the PNG reads like the mounted panel.
+        img = img.rotate(90, expand=True)
     out = Path(__file__).parent / "frame.png"
     img.save(out)
     state["etag"] = r.headers.get("ETag")
@@ -149,7 +186,8 @@ def main():
     p = sub.add_parser("register", help="pair with the server (creates the device)")
     p.add_argument("--server", required=True, help="e.g. http://192.168.1.50:8765")
     p.add_argument("--code", required=True, help="6-digit pairing code from the UI")
-    p.add_argument("--device-id", default="inkplate6c_dryrun")
+    p.add_argument("--board", choices=sorted(BOARDS), default="6color")
+    p.add_argument("--device-id", default=None, help="default depends on --board")
     p.add_argument("--name", default="Dry-run Inkplate")
     p.add_argument("--mac", default=None)
     p.set_defaults(fn=cmd_register)

@@ -25,6 +25,19 @@ void test_backoff() {
     TEST_ASSERT_EQUAL_UINT32(604800, backoffSeconds(50, 604800)); // caps at large capS, no overflow
 }
 
+void test_frame_stride() {
+    const FrameStride L = FrameStride::Landscape, T = FrameStride::Transposed,
+                      M = FrameStride::Mismatch;
+    // No native echo: preset landscape stride, canvas either way round.
+    TEST_ASSERT_TRUE(L == frameStride(1600, 1200, 0, 0, 1600, 1200));
+    TEST_ASSERT_TRUE(L == frameStride(1200, 1600, 0, 0, 1600, 1200));
+    TEST_ASSERT_TRUE(M == frameStride(800, 480, 0, 0, 1600, 1200));
+    // Native echo decides, in either orientation.
+    TEST_ASSERT_TRUE(L == frameStride(1200, 1600, 1600, 1200, 1600, 1200));
+    TEST_ASSERT_TRUE(T == frameStride(1600, 1200, 1200, 1600, 1600, 1200));
+    TEST_ASSERT_TRUE(M == frameStride(1600, 1200, 800, 480, 1600, 1200));
+}
+
 void test_packed_size() {
     TEST_ASSERT_EQUAL_UINT32(134400, packedSize4bpp(600, 448)); // unchanged for even width
     TEST_ASSERT_EQUAL_UINT32(4, packedSize4bpp(4, 2));
@@ -62,6 +75,7 @@ int main() {
     RUN_TEST(test_clamp_interval);
     RUN_TEST(test_backoff);
     RUN_TEST(test_packed_size);
+    RUN_TEST(test_frame_stride);
     RUN_TEST(test_unpack_4bpp_nibble_order);
     RUN_TEST(test_unpack_4bpp_odd_width_skips_trailing_low_nibble);
     return UNITY_END();

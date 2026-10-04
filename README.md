@@ -16,8 +16,9 @@ On battery it can run for weeks between charges.
 
 ## What you need
 
-- **An Inkplate 6COLOR** from [Soldered](https://soldered.com/inkplate/),
-  plus a USB-C cable that carries data (some only charge).
+- **An Inkplate 6COLOR or Inkplate 13SPECTRA** from
+  [Soldered](https://soldered.com/inkplate/), plus a USB-C cable that
+  carries data (some only charge).
 - **A computer that's always on** to run Tesserae: a home server, NAS,
   Raspberry Pi or spare PC with [Docker](https://docs.docker.com/get-docker/)
   installed.
@@ -81,12 +82,21 @@ won't be uploaded if you push your own copy.
 
 ### Step 5: Load the firmware onto the Inkplate
 
-Plug the Inkplate into your computer with the USB-C cable, then run:
+Plug the Inkplate into your computer with the USB-C cable, then run the
+command for your board:
 
 ```sh
 cd firmware
-pio run -e inkplate6color -t upload
+pio run -e inkplate6color -t upload      # Inkplate 6COLOR
+pio run -e inkplate13spectra -t upload   # Inkplate 13SPECTRA
 ```
+
+> **Inkplate 13SPECTRA:** the dashboard is landscape (1600×1200). For a
+> portrait or upside-down mount, change the device's **orientation** in
+> Tesserae (Settings → Devices); no firmware change needed. A brand-new
+> board can be checked first with
+> `pio run -e inkplate13spectra_selftest -t upload`, which paints six
+> colour stripes without needing Wi-Fi.
 
 (In VS Code, you can instead click the PlatformIO **Upload** button.)
 
@@ -96,7 +106,7 @@ After uploading, the Inkplate connects to Wi-Fi and pairs itself. Within
 a minute it should appear in Tesserae under **Settings → Devices**.
 
 Open the device, **assign the page you made in Step 2**, and wait for the
-next update. The screen takes about 30 seconds to redraw. That slow,
+next update. The screen takes about 20–30 seconds to redraw. That slow,
 flickering redraw is normal for color e-ink.
 
 **You're done.** 🎉 From now on, edit the dashboard in Tesserae and the

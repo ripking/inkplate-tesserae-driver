@@ -30,8 +30,12 @@ Work top to bottom; each stage gates the next.
 - [ ] `cp firmware/include/config.example.h firmware/include/config.h`,
       fill in Wi-Fi, server URL, a fresh pairing code, unique DEVICE_ID.
       Start with `POWER_MODE POWER_USB` for bring-up (serial stays up).
-- [ ] Connect Inkplate over USB-C; `cd firmware && pio run -e inkplate6color -t upload`.
-- [ ] `pio device monitor`: watch register → fetch → `painting 600x448 frame`.
+- [ ] Connect Inkplate over USB-C; `cd firmware && pio run -e inkplate6color -t upload`
+      (Inkplate 13SPECTRA: `-e inkplate13spectra`; optionally flash
+      `-e inkplate13spectra_selftest` first to check colours and orientation
+      without Wi-Fi).
+- [ ] `pio device monitor`: watch register → fetch → `painting 600x448 frame`
+      (13SPECTRA: `painting 1600x1200` or `1200x1600 frame (canvas 1600x1200)`).
 - [ ] Panel shows the dashboard (~25–30 s ACeP refresh).
 - [ ] Device appears in Tesserae UI with real battery/RSSI/IP.
 - [ ] Next cycle logs `frame unchanged (304)` when the dashboard hasn't changed.

@@ -24,6 +24,16 @@ constexpr size_t packedSize4bpp(int w, int h) {
     return static_cast<size_t>(h) * ((static_cast<size_t>(w) + 1) / 2);
 }
 
+// Which stride a /frame envelope's .bin is packed at, relative to our
+// landscape panelW x panelH. A server-echoed native stride decides it and
+// may be either orientation (devices paired with a declared rotation record
+// a portrait framebuffer). Without one, Tesserae packs at the panel
+// preset's landscape stride whichever way the canvas is turned, so the
+// canvas dims may be ours in either orientation.
+enum class FrameStride { Mismatch, Landscape, Transposed };
+FrameStride frameStride(int canvasW, int canvasH, int nativeW, int nativeH,
+                        int panelW, int panelH);
+
 // Tesserae 4-bpp .bin: row-major, high nibble = even column.
 typedef void (*PixelEmit)(int x, int y, uint8_t idx, void *ctx);
 void unpack4bpp(const uint8_t *src, int w, int h, PixelEmit emit, void *ctx);

@@ -1,5 +1,5 @@
 import pytest
-from tesserae_dryrun import PALETTE, decode_bin
+from tesserae_dryrun import PALETTE, SPECTRA6_PALETTE, decode_bin
 
 
 def test_palette_has_seven_colors_in_tesserae_order():
@@ -56,3 +56,14 @@ def test_state_round_trip(tmp_path):
     assert load_state(p) == {}
     save_state(p, {"token": "abc", "etag": '"d1"'})
     assert load_state(p) == {"token": "abc", "etag": '"d1"'}
+
+
+def test_spectra6_palette_skips_reserved_nibbles():
+    # waveshare_e6 wire codes: blue and green sit at 5 and 6; 4 and 7 are
+    # reserved. Mirrors the 13SPECTRA kPalette in frame_painter.cpp.
+    assert sorted(SPECTRA6_PALETTE) == [0, 1, 2, 3, 5, 6]
+    img = decode_bin(bytes([0x56, 0x47]), 4, 1, SPECTRA6_PALETTE)
+    assert img.getpixel((0, 0)) == (0, 0, 255)      # 5 blue
+    assert img.getpixel((1, 0)) == (0, 128, 0)      # 6 green
+    assert img.getpixel((2, 0)) == (255, 255, 255)  # 4 reserved -> white
+    assert img.getpixel((3, 0)) == (255, 255, 255)  # 7 reserved -> white
