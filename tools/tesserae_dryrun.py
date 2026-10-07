@@ -39,9 +39,9 @@ SPECTRA6_PALETTE = {
 # device registers, which Tesserae's panel presets also use as the .bin
 # stride.
 BOARDS = {
-    "6color": dict(panel_w=600, panel_h=448, gamut="inky_7colour",
+    "6color": dict(panel_w=600, panel_h=448, gamut="inky_7colour", kind="soldered_inkplate_6color",
                    palette=dict(enumerate(PALETTE)), device_id="inkplate6c_dryrun"),
-    "13spectra": dict(panel_w=1600, panel_h=1200, gamut="spectra_6",
+    "13spectra": dict(panel_w=1600, panel_h=1200, gamut="spectra_6", kind="soldered_inkplate_13spectra",
                       palette=SPECTRA6_PALETTE, device_id="inkplate13s_dryrun"),
 }
 
@@ -98,7 +98,7 @@ def cmd_register(args):
     board = BOARDS[args.board]
     manifest = {
         "device_id": args.device_id or board["device_id"],
-        "kind": "esp32_client",
+        "kind": board["kind"],
         "panel_w": board["panel_w"],
         "panel_h": board["panel_h"],
         "gamut": board["gamut"],
@@ -112,6 +112,15 @@ def cmd_register(args):
         json=manifest,
         timeout=15,
     )
+    if r.status_code == 400:
+        # Server predates the board's catalog kind; same fallback as the firmware.
+        manifest["kind"] = "esp32_client"
+        r = requests.post(
+            f"{args.server}/api/v1/device/register",
+            headers={"X-Pairing-Code": args.code},
+            json=manifest,
+            timeout=15,
+        )
     print(r.status_code, r.text[:500])
     r.raise_for_status()
     body = r.json()

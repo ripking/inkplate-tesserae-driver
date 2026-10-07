@@ -33,6 +33,9 @@
 // Spectra 6 controller codes (0 black, 1 white, 2 yellow, 3 red, 5 blue,
 // 6 green).
 #define PANEL_GAMUT "spectra_6"
+// Tesserae hardware-catalog kind for this board (server 0.443.1+); older
+// servers don't know it, and registration falls back to esp32_client.
+#define PANEL_KIND "soldered_inkplate_13spectra"
 
 #elif defined(ARDUINO_INKPLATECOLOR)
 // Inkplate 6COLOR: 5.8" ACeP 7-colour, ESP32.
@@ -41,6 +44,7 @@
 #define PANEL_H 448
 #define PAINT_ROTATION 0
 #define PANEL_GAMUT "inky_7colour"
+#define PANEL_KIND "soldered_inkplate_6color"
 
 #else
 #error "Unsupported board: build with an inkplate env from platformio.ini"

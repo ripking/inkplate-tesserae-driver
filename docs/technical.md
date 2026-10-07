@@ -29,7 +29,12 @@ Every wake runs one cycle (`firmware/src/main.cpp`):
 1. **Connect to Wi-Fi**, with a 20 s timeout.
 2. **Pair, if there's no saved token.** Sends `POST /api/v1/device/register`
    with the `X-Pairing-Code` header and stores the returned bearer token in
-   NVS.
+   NVS. The device registers as its Tesserae hardware-catalog kind
+   (`soldered_inkplate_6color` or `soldered_inkplate_13spectra`, set by
+   `PANEL_KIND` in `board.h`) so it shows up by name in Settings → Devices.
+   A server too old to know that kind answers 400 without using up the
+   pairing code, and the firmware retries the same code as `esp32_client`,
+   which gets the same frames.
 3. **Fetch the frame.** Sends `GET /api/v1/device/<id>/frame` with
    `If-None-Match`:
    - `304`: nothing changed; skip painting.

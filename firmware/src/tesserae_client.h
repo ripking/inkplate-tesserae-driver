@@ -27,7 +27,8 @@ class TesseraeClient {
 
     void setToken(const String &token) { _token = token; }
 
-    // POST /api/v1/device/register with X-Pairing-Code. True on 200/201;
+    // POST /api/v1/device/register with X-Pairing-Code, as PANEL_KIND and
+    // then esp32_client if the server doesn't know it. True on 200/201;
     // fills tokenOut.
     bool registerDevice(const String &pairingCode, const String &name,
                         const String &mac, String &tokenOut);
@@ -47,6 +48,10 @@ class TesseraeClient {
     void postLog(const char *level, const String &msg);
 
   private:
+    // One register attempt; returns the HTTP status (-1 on transport or
+    // parse failure).
+    int _postRegister(const String &pairingCode, const String &name,
+                      const String &mac, const char *kind, String &tokenOut);
     String _devicePath(const char *leaf) const {
         return _base + "/api/v1/device/" + _id + "/" + leaf;
     }

@@ -8,19 +8,37 @@
 
 static const uint32_t kHttpTimeoutMs = 20000;
 
+static const char *kGenericKind = "esp32_client";
+
 bool TesseraeClient::registerDevice(const String &pairingCode,
                                     const String &name, const String &mac,
                                     String &tokenOut) {
+    // Register as the board's catalog kind so the panel shows up by name.
+    // A server older than the catalog entry rejects the kind with 400
+    // before it consumes the pairing code, so the same code can retry as
+    // the generic kind, which gets byte-identical frames.
+    int code = _postRegister(pairingCode, name, mac, PANEL_KIND, tokenOut);
+    if (code == 400) {
+        Serial.printf("register: kind %s unknown to server; retrying as %s\n",
+                      PANEL_KIND, kGenericKind);
+        code = _postRegister(pairingCode, name, mac, kGenericKind, tokenOut);
+    }
+    return code == 200 || code == 201;
+}
+
+int TesseraeClient::_postRegister(const String &pairingCode,
+                                  const String &name, const String &mac,
+                                  const char *kind, String &tokenOut) {
     HTTPClient http;
     http.setTimeout(kHttpTimeoutMs);
     if (!http.begin(_base + "/api/v1/device/register"))
-        return false;
+        return -1;
     http.addHeader("Content-Type", "application/json");
     http.addHeader("X-Pairing-Code", pairingCode);
 
     JsonDocument doc;
     doc["device_id"] = _id;
-    doc["kind"] = "esp32_client";
+    doc["kind"] = kind;
     doc["panel_w"] = PANEL_W;
     doc["panel_h"] = PANEL_H;
     doc["gamut"] = PANEL_GAMUT;
@@ -34,17 +52,17 @@ bool TesseraeClient::registerDevice(const String &pairingCode,
     if (code != 200 && code != 201) {
         Serial.printf("register: HTTP %d %s\n", code, http.getString().c_str());
         http.end();
-        return false;
+        return code;
     }
     JsonDocument reply;
     DeserializationError err = deserializeJson(reply, http.getStream());
     http.end();
     if (err || reply["device_token"].isNull()) {
         Serial.printf("register: bad reply (%s)\n", err.c_str());
-        return false;
+        return -1;
     }
     tokenOut = reply["device_token"].as<String>();
-    return true;
+    return code;
 }
 
 FetchResult TesseraeClient::fetchEnvelope(const String &etag,
