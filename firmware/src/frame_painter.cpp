@@ -18,15 +18,15 @@ static const uint8_t kPalette[16] = {
     INKPLATE_WHITE, INKPLATE_WHITE, INKPLATE_WHITE,  INKPLATE_WHITE,
 };
 #else
-// Tesserae inky_7colour -> Inkplate 6COLOR. The server's gamut order is
-// NOT identity with the Inkplate constants: verified byte-for-byte against
-// the server's Calibration "Palette swatches" pattern (2026-07-14), the
+// Tesserae inky_7colour -> Inkplate 6COLOR. Since Tesserae 0.415.0 the
 // server emits
-//   0=black 1=white 2=yellow 3=red 4=blue 5=green 6=orange
-// so indices 2..5 must be remapped here (black/white/orange already align).
+//   0=black 1=white 2=green 3=blue 4=red 5=yellow 6=orange
+// which is identity with the Inkplate constants, so this is a pass-through.
+// Servers before 0.415.0 sent 2..5 as yellow/red/blue/green (tesserae#298);
+// an earlier version of this table compensated for that.
 static const uint8_t kPalette[16] = {
-    INKPLATE_BLACK, INKPLATE_WHITE, INKPLATE_YELLOW, INKPLATE_RED,
-    INKPLATE_BLUE,  INKPLATE_GREEN, INKPLATE_ORANGE, INKPLATE_WHITE,
+    INKPLATE_BLACK, INKPLATE_WHITE, INKPLATE_GREEN,  INKPLATE_BLUE,
+    INKPLATE_RED,   INKPLATE_YELLOW, INKPLATE_ORANGE, INKPLATE_WHITE,
     INKPLATE_WHITE, INKPLATE_WHITE, INKPLATE_WHITE,  INKPLATE_WHITE,
     INKPLATE_WHITE, INKPLATE_WHITE, INKPLATE_WHITE,  INKPLATE_WHITE,
 };

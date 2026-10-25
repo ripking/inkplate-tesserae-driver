@@ -9,17 +9,17 @@ anything is flashed, and doubles as a debugging tool afterwards.
 
 from PIL import Image
 
-# Tesserae `inky_7colour` gamut nibble order, verified byte-for-byte against
-# the server's Calibration "Palette swatches" pattern (2026-07-14). NOT the
-# Inkplate constant order: indices 2..5 are yellow/red/blue/green, not
-# green/blue/red/yellow. firmware/src/frame_painter.cpp mirrors this LUT.
+# Tesserae `inky_7colour` gamut nibble order (Tesserae 0.415.0+), the same
+# as the Inkplate constant order: indices 2..5 are green/blue/red/yellow.
+# Older servers sent yellow/red/blue/green (tesserae#298).
+# firmware/src/frame_painter.cpp mirrors this LUT.
 PALETTE = [
     (0, 0, 0),        # 0 black
     (255, 255, 255),  # 1 white
-    (255, 255, 0),    # 2 yellow
-    (255, 0, 0),      # 3 red
-    (0, 0, 255),      # 4 blue
-    (0, 128, 0),      # 5 green
+    (0, 128, 0),      # 2 green
+    (0, 0, 255),      # 3 blue
+    (255, 0, 0),      # 4 red
+    (255, 255, 0),    # 5 yellow
     (255, 140, 0),    # 6 orange
 ]
 
