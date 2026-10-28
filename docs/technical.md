@@ -103,11 +103,12 @@ and each row padded to a whole byte. A 600×448 frame is 134,400 bytes.
 
 | Index | 0 | 1 | 2 | 3 | 4 | 5 | 6 |
 |---|---|---|---|---|---|---|---|
-| Color | black | white | yellow | red | blue | green | orange |
+| Color | black | white | green | blue | red | yellow | orange |
 
-> **Note:** this order is **not** the same as the Inkplate library's
-> `INKPLATE_*` color constants. Indices 2–5 differ. The order above was
-> checked byte-for-byte against Tesserae's calibration swatches. The lookup
+> **Note:** this order matches the Inkplate library's `INKPLATE_*` color
+> constants one to one, so the lookup table is a pass-through. Tesserae
+> servers before 0.415.0 sent indices 2–5 as yellow/red/blue/green
+> (tesserae#298); a server that old needs indices 2–5 remapped. The lookup
 > table lives in `firmware/src/frame_painter.cpp` and is mirrored in
 > `tools/tesserae_dryrun.py`.
 
